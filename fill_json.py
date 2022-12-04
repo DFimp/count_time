@@ -37,6 +37,7 @@ def fill_past_date(date):
 
     except:
         data_file = dict()
+        data_file['decoding'] = {}
         data_file[date] = {}
 
     with open('data_time.json', 'w') as file:
