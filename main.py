@@ -5,6 +5,7 @@ from PyQt5.QtCore import Qt, QDate
 from oter_window.stopwatch import Timer
 from oter_window.record_data import Add
 from oter_window.look_data import Look_data
+from oter_window.create_category import Create
 from fill_json import fill_past_date
 
 
@@ -50,12 +51,16 @@ class MainWindow(QWidget):
         # self.close()
 
     def create_category(self):
-        pass
+        global window_create
+        window_create = Create()
+        window_create.show()
+        # self.close()
 
     def look_data(self):
         global window_look
         window_look = Look_data()
         window_look.show()
+        # self.close()
 
 
 today = QDate.currentDate().toString(Qt.ISODate)

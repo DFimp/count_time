@@ -41,5 +41,3 @@ def fill_past_date(date):
 
     with open('data_time.json', 'w') as file:
         file.write(json.dumps(data_file, indent=4))
-
-# fill_past_date('2000-03-01')

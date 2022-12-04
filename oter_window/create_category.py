@@ -1,8 +1,6 @@
-from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QGridLayout, QLineEdit, \
+from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QLineEdit, \
     QPushButton, QMessageBox
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPainter, QFont, QPen, QColor
-import sys
+from PyQt5.QtGui import QFont
 import json
 
 
@@ -10,7 +8,7 @@ class Create(QWidget):
     def __init__(self):
         super().__init__()
 
-        with open('../data_time.json') as file:
+        with open('data_time.json') as file:
             self.data_time = json.load(file)
 
         self.setWindowTitle('Создать категорию')
@@ -65,11 +63,5 @@ class Create(QWidget):
             question = QMessageBox.information(self, '', 'Категория успешно сохранена')
             self.lineEdit.clear()
             self.create_labelCategoty()
-
-
-app = QApplication(sys.argv)
-
-window_create = Create()
-window_create.show()
-
-sys.exit(app.exec_())
+            with open('data_time.json', 'w') as file:
+                json.dump(self.data_time, file, indent=4)
