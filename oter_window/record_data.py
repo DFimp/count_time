@@ -104,7 +104,7 @@ class Add(QWidget):
         else:
             data_time[date][selected_category] += time
 
-        with open('../data_time.json', 'w') as file:
+        with open('data_time.json', 'w') as file:
             json.dump(data_time, file, indent=4)
 
     def save(self):
