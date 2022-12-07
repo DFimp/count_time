@@ -1,73 +1,75 @@
-from PyQt5 import QtWidgets
+from PyQt5.QtCore import QDate, Qt
+from PyQt5.QtWidgets import QApplication
 import sys
-from PyQt5.QtWidgets import QWidget, QPushButton, QApplication
-from PyQt5.QtCore import Qt, QDate
-from oter_window.stopwatch import Timer
-from oter_window.record_data import Add
-from oter_window.look_data import Look_data
-from oter_window.create_category import Create
-from fill_json import fill_past_date
 
-
-class MainWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-
-        self.setGeometry(300, 300, 300, 150)
-        self.setWindowTitle('Основное окно')
-        self.layout = QtWidgets.QVBoxLayout()
-
-        self.btn_stopwatch = QPushButton('Секундомер', self)
-        self.layout.addWidget(self.btn_stopwatch)
-
-        self.btn_add_data = QPushButton('Запись данных', self)
-        self.layout.addWidget(self.btn_add_data)
-
-        self.btn_create_categories = QPushButton('Создать категорию', self)
-        self.layout.addWidget(self.btn_create_categories)
-
-        self.btn_look_data = QPushButton('Просмотр данных', self)
-        self.layout.addWidget(self.btn_look_data)
-
-        self.layout.setContentsMargins(10, 10, 10, 10)
-
-        self.setLayout(self.layout)
-
-        self.btn_stopwatch.clicked.connect(self.stopwatch)
-        self.btn_add_data.clicked.connect(self.add_data)
-        self.btn_create_categories.clicked.connect(self.create_category)
-        self.btn_look_data.clicked.connect(self.look_data)
-
-    def stopwatch(self):
-        global window_stopwatch
-        window_stopwatch = Timer()
-        window_stopwatch.show()
-        # self.close()
-
-    def add_data(self):
-        global window_record_data
-        window_record_data = Add()
-        window_record_data.show()
-        # self.close()
-
-    def create_category(self):
-        global window_create
-        window_create = Create()
-        window_create.show()
-        # self.close()
-
-    def look_data(self):
-        global window_look
-        window_look = Look_data()
-        window_look.show()
-        # self.close()
+from function.fill_json import fill_past_date
+from windows.main_window import MainWindow
+from windows.stopwatch_window import TimerWindow
+from windows.record_window import Add
+from windows.look_window import Look_data
+from windows.create_window import CreateWindow
 
 
 today = QDate.currentDate().toString(Qt.ISODate)
-fill_past_date(today)
+fill_past_date(today, 'data_time.json')
+
+
+def launch(start_win, stop_win):
+    start_win.show()
+    stop_win.close()
+
+
+def launch_record():
+    text = list(map(int, window_stopwatch.lineEdit.text().split(':')))
+    window_stopwatch.reset()
+    window_record.record_time_edit(time=text)
+    window_stopwatch.close()
+    window_record.show()
+
+
+def launch_create():
+    window_record.comboBox.clear()
+    window_record.create_push_button_category()
+
 
 app = QApplication(sys.argv)
 window = MainWindow()
+window_stopwatch = TimerWindow()
+window_record = Add()
+window_create = CreateWindow()
+window_look = Look_data()
 window.show()
-sys.exit(app.exec_())
 
+
+# Attaching functions to a button in the main menu
+window.btn_stopwatch.clicked.connect(lambda clicked, start_win=window_stopwatch, stop_win=window:
+                                     launch(start_win, stop_win))
+window.btn_add_data.clicked.connect(lambda clicked, start_win=window_record, stop_win=window:
+                                    launch(start_win, stop_win))
+window.btn_create_categories.clicked.connect(lambda clicked, start_win=window_create, stop_win=window:
+                                             launch(start_win, stop_win))
+window.btn_look_data.clicked.connect(lambda clicked, start_win=window_look, stop_win=window:
+                                     launch(start_win, stop_win))
+
+
+window_stopwatch.btn_menu.clicked.connect(lambda clicked, start_win=window, stop_win=window_stopwatch:
+                                          launch(start_win, stop_win))
+window_stopwatch.btn_record.clicked.connect(launch_record)
+
+
+window_record.btn_menu.clicked.connect(lambda clicked, start_win=window, stop_win=window_record:
+                                       launch(start_win, stop_win))
+window_record.btn_create.clicked.connect(lambda clicked, start_win=window_create, stop_win=window_record:
+                                         launch(start_win, stop_win))
+
+
+window_create.btn_menu.clicked.connect(lambda clicked, start_win=window, stop_win=window_create:
+                                       launch(start_win, stop_win))
+window_create.btn_save.clicked.connect(launch_create)
+
+
+window_look.btn_menu.clicked.connect(lambda clicked, start_win=window, stop_win=window_look:
+                                     launch(start_win, stop_win))
+
+
+sys.exit(app.exec_())
