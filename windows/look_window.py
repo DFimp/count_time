@@ -10,7 +10,7 @@ class Look_data(QWidget):
     def __init__(self):
         super().__init__()
 
-        with open('../data_time.json') as file:
+        with open('data_time.json') as file:
             self.data_time = json.load(file)
 
         self.setWindowTitle('Просмотр')
