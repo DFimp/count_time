@@ -51,15 +51,15 @@ class CreateWindow(QWidget):
         ''')
         self.btn_menu.setStyleSheet('''
             QPushButton {
-                background-color: #1a1a1a;
+                color: #1a1a1a;
+                background-color: white;
                 border-radius: 10;
                 height: 100px;
-                border: 2px solid #ffffff;
                 border-radius: 5;
             }
             QPushButton:pressed {
-                color: #1a1a1a;
-                background-color: white
+                color: white;
+                background-color: #1a1a1a
             }
         ''')
 
@@ -86,6 +86,9 @@ class CreateWindow(QWidget):
 
         elif not text:
             question = QMessageBox.information(self, 'окно', 'Вы ничего не ввели\nПопробуйте ещё')
+
+        elif len(text) > 25:
+            question = QMessageBox.information(self, 'окно', 'Вы ввели слишком длинное\nназвание для категории.\nСократите его до 25 символов;)')
 
         else:
             if self.data_time['decoding']:

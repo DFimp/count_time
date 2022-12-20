@@ -48,6 +48,19 @@ class TimerWindow(QWidget):
             }
         '''
 
+        style_button_menu = '''
+                    QPushButton {
+                        color: #1a1a1a;
+                        background-color: white;
+                        height: 70px;
+                    }
+                    QPushButton:pressed {
+                        color: white;
+                        background-color: #1a1a1a;
+                        border: 0px
+                    }
+                '''
+
         self.timer = QTimer()
         self.timer.setInterval(1000)
 
@@ -69,7 +82,7 @@ class TimerWindow(QWidget):
         self.lineEdit.setStyleSheet('''
             height: 50px
         ''')
-        self.btn_menu.setStyleSheet(style_button_second)
+        self.btn_menu.setStyleSheet(style_button_menu)
 
         self.mainLayout.addWidget(self.btn_start, 0, 0, 1, 1)
         self.mainLayout.addWidget(self.btn_stop, 0, 1, 1, 1)

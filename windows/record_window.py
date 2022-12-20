@@ -52,6 +52,21 @@ class Add(QWidget):
             }
         '''
 
+        style_button_menu = '''
+            QPushButton {
+                color: #1a1a1a;
+                background-color: white;
+                border-radius: 10;
+                width: 170px;
+                height: 70px;
+                border-radius: 5;
+            }
+            QPushButton:pressed {
+                color: white;
+                background-color: #1a1a1a 
+            }
+        '''
+
         self.label_dateEdit.setAlignment(Qt.AlignCenter)
         self.label_timeEdit.setAlignment(Qt.AlignCenter)
         self.label_category.setAlignment(Qt.AlignCenter)
@@ -71,7 +86,7 @@ class Add(QWidget):
         ''')
         self.btn_save.setStyleSheet(style_button)
         self.btn_create.setStyleSheet(style_button)
-        self.btn_menu.setStyleSheet(style_button)
+        self.btn_menu.setStyleSheet(style_button_menu)
         self.btn_reset.setStyleSheet(style_button)
 
         self.mainLayout.addWidget(self.label_dateEdit, 0, 0, 1, 1)
@@ -122,7 +137,7 @@ class Add(QWidget):
         with open('data_time.json') as file:
             data_time = json.load(file)
 
-        if not data_time[date]:
+        if selected_category not in data_time[date].keys():
             data_time[date][selected_category] = time
 
         else:
