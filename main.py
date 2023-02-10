@@ -1,13 +1,12 @@
 from PyQt5.QtCore import QDate, Qt
 from PyQt5.QtWidgets import QApplication
-import sys
-
 from function.fill_json import fill_past_date
 from windows.main_window import MainWindow
 from windows.stopwatch_window import TimerWindow
 from windows.record_window import Add
-# from windows.look_window import Look_data
+from windows.look_window import LookDataWindow
 from windows.create_window import CreateWindow
+import sys
 
 
 today = QDate.currentDate().toString(Qt.ISODate)
@@ -15,6 +14,9 @@ fill_past_date(today, 'data_time.json')
 
 
 def launch(start_win, stop_win):
+    if isinstance(start_win, LookDataWindow):
+        start_win.reset()
+
     start_win.show()
     stop_win.close()
 
@@ -37,7 +39,7 @@ window = MainWindow()
 window_stopwatch = TimerWindow()
 window_record = Add()
 window_create = CreateWindow()
-# window_look = Look_data()
+window_look = LookDataWindow()
 window.show()
 
 
@@ -48,8 +50,8 @@ window.btn_add_data.clicked.connect(lambda clicked, start_win=window_record, sto
                                     launch(start_win, stop_win))
 window.btn_create_categories.clicked.connect(lambda clicked, start_win=window_create, stop_win=window:
                                              launch(start_win, stop_win))
-# window.btn_look_data.clicked.connect(lambda clicked, start_win=window_look, stop_win=window:
-#                                      launch(start_win, stop_win))
+window.btn_look_data.clicked.connect(lambda clicked, start_win=window_look, stop_win=window:
+                                     launch(start_win, stop_win))
 
 
 window_stopwatch.btn_menu.clicked.connect(lambda clicked, start_win=window, stop_win=window_stopwatch:
@@ -68,8 +70,8 @@ window_create.btn_menu.clicked.connect(lambda clicked, start_win=window, stop_wi
 window_create.btn_save.clicked.connect(launch_create)
 
 
-# window_look.btn_menu.clicked.connect(lambda clicked, start_win=window, stop_win=window_look:
-#                                      launch(start_win, stop_win))
+window_look.btn_menu.clicked.connect(lambda clicked, start_win=window, stop_win=window_look:
+                                     launch(start_win, stop_win))
 
 
 sys.exit(app.exec_())
