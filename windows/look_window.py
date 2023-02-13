@@ -1,9 +1,10 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QApplication, QTableWidget, QGridLayout, QTableWidgetItem, QAbstractItemView, \
-    QComboBox, QPushButton, QLabel, QRadioButton, QGroupBox
+    QComboBox, QPushButton, QLabel, QRadioButton, QGroupBox, QVBoxLayout
 from PyQt5.QtCore import QDate
 from PyQt5.Qt import QPixmap
 from additionally import days_in_month, title_month, title_day_in_week
+from function.time_for_human import transformation
 import json
 import math
 import matplotlib.pyplot as chart
@@ -191,10 +192,11 @@ class LookDataWindow(QWidget):
         date = str(year) + '-' + '0' * (2 - len(str(month))) + str(month) + '-' + '0' * (2 - len(str(day))) + str(day)
         data = self.data_time[date]
         self.delete()
-        if os.path.exists('chart_images/image_chart_day.png'):
-            os.remove('chart_images/image_chart_day.png')
 
         if data:
+            if os.path.exists('chart_images/image_chart_day.png'):
+                os.remove('chart_images/image_chart_day.png')
+
             self.widget = QWidget()
             layout = QGridLayout()
 
@@ -216,7 +218,27 @@ class LookDataWindow(QWidget):
             chart_day = QLabel()
             chart_day.setPixmap(QPixmap('chart_images/image_chart_day.png'))
 
+            day_layout = QVBoxLayout()
+            name_category = QLabel('Категории')
+            name_category.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            day_layout.addWidget(name_category)
+
+            all_time = 0
+            for activity in data.items():
+                day_layout.addWidget(QLabel(f'{category[activity[0]]} - {transformation(activity[1])}'))
+                all_time += activity[1]
+
+            name_analytics = QLabel('Аналитика')
+            name_analytics.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            all_time = QLabel(f'Всего - {transformation(all_time)}')
+            day_layout.addWidget(name_analytics)
+            day_layout.addWidget(all_time)
+
+            group_label_day = QGroupBox()
+            group_label_day.setLayout(day_layout)
+
             layout.addWidget(chart_day, 0, 0)
+            layout.addWidget(group_label_day, 0, 1)
             self.widget.setLayout(layout)
 
         else:
