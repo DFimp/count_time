@@ -2,11 +2,14 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QApplication, QTableWidget, QGridLayout, QTableWidgetItem, QAbstractItemView, \
     QComboBox, QPushButton, QLabel, QRadioButton, QGroupBox
 from PyQt5.QtCore import QDate
+from PyQt5.Qt import QPixmap
 from additionally import days_in_month, title_month, title_day_in_week
 import json
 import math
+import matplotlib.pyplot as chart
+import os
 
-DATA = 'data_time.json'
+DATA = '../data_time.json'
 
 
 class LookDataWindow(QWidget):
@@ -169,15 +172,57 @@ class LookDataWindow(QWidget):
 
             self.create_all_widgets()
 
-    def create_days_widgets(self, day, month, year):
-        self.delete()
+    def create_clear_widget(self):
+        return QLabel('За выбранный период данные не найдены ¯\_(ツ)_/¯')
 
-        self.widget = QWidget()
-        l = QGridLayout()
-        label = QLabel(f'day = {day}, month = {month}, year = {year}')
-        label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-        l.addWidget(label)
-        self.widget.setLayout(l)
+    def create_days_widgets(self, day, month, year):
+
+        if type(day) == str:
+            if day == 'Сегодня':
+                day = self.day
+
+            day = int(day)
+            year = int(year)
+            month = title_month.index(month) + 1
+
+        with open(DATA) as file:
+            self.data_time = json.load(file)
+
+        date = str(year) + '-' + '0' * (2 - len(str(month))) + str(month) + '-' + '0' * (2 - len(str(day))) + str(day)
+        data = self.data_time[date]
+        self.delete()
+        if os.path.exists('chart_images/image_chart_day.png'):
+            os.remove('chart_images/image_chart_day.png')
+
+        if data:
+            self.widget = QWidget()
+            layout = QGridLayout()
+
+            category = self.data_time['decoding']
+            labels = [category[activity] for activity in data]
+            max_activity = max(data, key=data.get)
+            explode = []
+            for activity in data.keys():
+                if activity == max_activity:
+                    explode.append(0.1)
+                else:
+                    explode.append(0)
+
+            chart_day = chart
+            chart_day.subplots()
+            chart_day.pie(list(data.values()), explode=explode, labels=labels, autopct='%1.1f%%', shadow=True)
+            chart_day.title('Распределение времени по категориям')
+            chart_day.savefig('chart_images/image_chart_day.png')
+            chart_day = QLabel()
+            chart_day.setPixmap(QPixmap('chart_images/image_chart_day.png'))
+
+            layout.addWidget(chart_day, 0, 0)
+            self.widget.setLayout(layout)
+
+        else:
+            self.widget = self.create_clear_widget()
+            self.widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
 
     def create_weeks_widgets(self, number_week, month, year):
@@ -198,6 +243,10 @@ class LookDataWindow(QWidget):
         l = QGridLayout()
         label = QLabel(f'month = {month}, year = {year}')
         label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+
+        table = self.create_table()
+        l.addWidget(table, 0, 1)
+
         l.addWidget(label)
         self.widget.setLayout(l)
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
@@ -209,7 +258,7 @@ class LookDataWindow(QWidget):
         l = QGridLayout()
         label = QLabel(f'years = {year}')
         label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-        l.addWidget(label)
+        l.addWidget(label, 0, 0)
         self.widget.setLayout(l)
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
 
@@ -365,15 +414,14 @@ class LookDataWindow(QWidget):
                 pass
 
         table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        return table
 
-        self.grid_layout.addWidget(table, 1, 0, 1, 1)
 
-#
-# import sys
-# app = QApplication(sys.argv)
-#
-# window = LookDataWindow()
-#
-# window.show()
-#
-# app.exec_()
+import sys
+app = QApplication(sys.argv)
+
+window = LookDataWindow()
+
+window.show()
+
+app.exec_()
