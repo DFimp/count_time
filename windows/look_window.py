@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QWidget, QApplication, QTableWidget, QGridLayout, QT
     QComboBox, QPushButton, QLabel, QRadioButton, QGroupBox, QVBoxLayout
 from PyQt5.QtCore import QDate
 from PyQt5.Qt import QPixmap
-from additionally import days_in_month, title_month, title_day_in_week
+from additionally import days_in_month, title_month, title_day_in_week, check_leap_year
 from function.time_for_human import transformation
 import json
 import math
@@ -304,13 +304,7 @@ class LookDataWindow(QWidget):
             day = self.day - 1
             self.comboBox_days.addItem('Сегодня')
         else:
-            if month == 2:
-                if int(self.comboBox_years.currentText()) % 4 == 0:
-                    day = days_in_month[month - 1][1]
-                else:
-                    day = days_in_month[month - 1][0]
-            else:
-                day = days_in_month[month - 1]
+            day = check_leap_year(month - 1, int(self.comboBox_years.currentText()))
 
         while day != 0:
             self.comboBox_days.addItem(str(day))
@@ -327,14 +321,7 @@ class LookDataWindow(QWidget):
         today_year = self.year
         month = title_month.index(month)
 
-        if month == 1:
-            if year % 4 == 0:
-                number_days = days_in_month[month][1]
-            else:
-                number_days = days_in_month[month][0]
-        else:
-            number_days = days_in_month[month]
-
+        number_days = check_leap_year(month, year)
         day_week = title_day_in_week.index(day_week)
 
         if month == today_month:
@@ -352,14 +339,7 @@ class LookDataWindow(QWidget):
                         today_year -= 1
                         today_month = 11
 
-                    if today_month == 1:
-                        if today_year % 4 == 0:
-                            number = days_in_month[today_month][1]
-                        else:
-                            number = days_in_month[today_month][0]
-                    else:
-                        number = days_in_month[today_month]
-
+                    number = check_leap_year(today_month, today_year)
                     first_day_month -= number
 
         if first_day_month <= 0:
@@ -370,9 +350,21 @@ class LookDataWindow(QWidget):
         first_day_month = title_day_in_week[first_day_month]
         first_day_month = title_day_in_week.index(first_day_month)
 
-        number_weeks = math.ceil((first_day_month + number_days) / 7)
+        list_week = []
+        first_day = 1
+        end_day = first_day + abs(first_day_month - 6)
+        while True:
+            list_week.append(f'{first_day} - {end_day}')
+            first_day = end_day + 1
+            end_day += 7
+            if end_day > number_days:
+                end_day = number_days
+                list_week.append(f'{first_day} - {end_day}')
+                break
+        #
+        # number_weeks = math.ceil((first_day_month + number_days) / 7)
 
-        [self.comboBox_weeks.addItem(str(x)) for x in range(1, number_weeks + 1)]
+        [self.comboBox_weeks.addItem(x) for x in list_week]
 
     def fill_month(self, year):
         ''' Counting and recording the number of months in ComboBox_months '''
