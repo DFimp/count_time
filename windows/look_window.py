@@ -6,7 +6,6 @@ from PyQt5.Qt import QPixmap
 from additionally import days_in_month, title_month, title_day_in_week, check_leap_year
 from function.time_for_human import transformation
 import json
-import math
 import matplotlib.pyplot as chart
 import os
 
@@ -194,8 +193,8 @@ class LookDataWindow(QWidget):
         self.delete()
 
         if data:
-            if os.path.exists('chart_images/image_chart_day.png'):
-                os.remove('chart_images/image_chart_day.png')
+            if os.path.exists('image_chart_day.png'):
+                os.remove('image_chart_day.png')
 
             self.widget = QWidget()
             layout = QGridLayout()
@@ -214,9 +213,9 @@ class LookDataWindow(QWidget):
             chart_day.subplots()
             chart_day.pie(list(data.values()), explode=explode, labels=labels, autopct='%1.1f%%', shadow=True)
             chart_day.title('Распределение времени по категориям')
-            chart_day.savefig('chart_images/image_chart_day.png')
+            chart_day.savefig('image_chart_day.png')
             chart_day = QLabel()
-            chart_day.setPixmap(QPixmap('chart_images/image_chart_day.png'))
+            chart_day.setPixmap(QPixmap('image_chart_day.png'))
 
             day_layout = QVBoxLayout()
             name_category = QLabel('Категории')
@@ -354,15 +353,18 @@ class LookDataWindow(QWidget):
         first_day = 1
         end_day = first_day + abs(first_day_month - 6)
         while True:
-            list_week.append(f'{first_day} - {end_day}')
+            if first_day_month != 0:
+                list_week.append(f'{check_leap_year(month - 1, year) + 1 - first_day_month} {title_month[month - 1]} - '
+                                 f'{end_day} {title_month[month]}')
+                first_day_month = 0
+            else:
+                list_week.append(f'{first_day} - {end_day}')
             first_day = end_day + 1
             end_day += 7
             if end_day > number_days:
-                end_day = number_days
-                list_week.append(f'{first_day} - {end_day}')
+                end_day = 6 - (number_days - first_day)
+                list_week.append(f'{first_day} {title_month[month]} - {end_day} {title_month[month + 1]}')
                 break
-        #
-        # number_weeks = math.ceil((first_day_month + number_days) / 7)
 
         [self.comboBox_weeks.addItem(x) for x in list_week]
 
