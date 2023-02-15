@@ -133,10 +133,10 @@ class LookDataWindow(QWidget):
         ''' Fill in the ComboBox values when changing the selected RudioButton '''
 
         if self.check_box_days.isChecked():
+            self.fill_year()
             self.comboBox_weeks.clear()
             self.fill_day(self.month)
             self.fill_month(self.year)
-            self.fill_year()
 
             self.create_days_widgets(self.day, self.month, self.year)
 
@@ -146,7 +146,7 @@ class LookDataWindow(QWidget):
             self.fill_month(self.year)
             self.fill_year()
 
-            self.create_weeks_widgets(1, self.month, self.year)
+            self.create_weeks_widgets(self.comboBox_weeks.currentText(), self.month, self.year)
 
         if self.check_box_months.isChecked():
             self.fill_month(self.year)
@@ -305,9 +305,13 @@ class LookDataWindow(QWidget):
         else:
             day = check_leap_year(month - 1, int(self.comboBox_years.currentText()))
 
+        initial_date = min(self.data_time.keys())
         while day != 0:
+            date = str(self.comboBox_years.currentText()) + '-' + '0' * (2 - len(str(month))) + str(month) + '-' + '0' * (2 - len(str(day))) + str(day)
             self.comboBox_days.addItem(str(day))
             day -= 1
+            if date == initial_date:
+                break
 
     def fill_week(self, month, year):
         ''' Counting and recording the number of weeks in ComboBox_weeks '''
@@ -363,7 +367,7 @@ class LookDataWindow(QWidget):
             end_day += 7
             if end_day > number_days:
                 end_day = 6 - (number_days - first_day)
-                list_week.append(f'{first_day} {title_month[month]} - {end_day} {title_month[month + 1]}')
+                list_week.append(f'{first_day} {title_month[month]} - {end_day} {title_month[month - 11]}')
                 break
 
         [self.comboBox_weeks.addItem(x) for x in list_week]
