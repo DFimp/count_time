@@ -7,6 +7,7 @@ from additionally import days_in_month, title_month, title_day_in_week, check_le
 from function.time_for_human import transformation
 import json
 import matplotlib.pyplot as chart
+import math
 import os
 
 DATA = '../data_time.json'
@@ -307,7 +308,8 @@ class LookDataWindow(QWidget):
 
         initial_date = min(self.data_time.keys())
         while day != 0:
-            date = str(self.comboBox_years.currentText()) + '-' + '0' * (2 - len(str(month))) + str(month) + '-' + '0' * (2 - len(str(day))) + str(day)
+            date = str(self.comboBox_years.currentText()) + '-' + '0' * (2 - len(str(month))) + str(month) + '-' + \
+                   '0' * (2 - len(str(day))) + str(day)
             self.comboBox_days.addItem(str(day))
             day -= 1
             if date == initial_date:
@@ -356,6 +358,7 @@ class LookDataWindow(QWidget):
         list_week = []
         first_day = 1
         end_day = first_day + abs(first_day_month - 6)
+
         while True:
             if first_day_month != 0:
                 list_week.append(f'{check_leap_year(month - 1, year) + 1 - first_day_month} {title_month[month - 1]} - '
@@ -369,6 +372,12 @@ class LookDataWindow(QWidget):
                 end_day = 6 - (number_days - first_day)
                 list_week.append(f'{first_day} {title_month[month]} - {end_day} {title_month[month - 11]}')
                 break
+
+        min_date = min(self.data_time.keys())
+        if str(year) + '-' + '0' * (2 - len(str(month + 1))) + str(month + 1) == min_date[:-3]:
+            number_weeks = math.ceil(((first_day_month + int(min_date[-2:]) % 7 + 1) + (check_leap_year(month, year) -
+                                                                                        int(min_date[-2:]))) / 7)
+            list_week = list_week[-number_weeks :]
 
         [self.comboBox_weeks.addItem(x) for x in list_week]
 
