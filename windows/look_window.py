@@ -177,6 +177,7 @@ class LookDataWindow(QWidget):
         return QLabel('За выбранный период данные не найдены ¯\_(ツ)_/¯')
 
     def create_days_widgets(self, day, month, year):
+        self.delete()
 
         if type(day) == str:
             if day == 'Сегодня':
@@ -191,11 +192,10 @@ class LookDataWindow(QWidget):
 
         date = str(year) + '-' + '0' * (2 - len(str(month))) + str(month) + '-' + '0' * (2 - len(str(day))) + str(day)
         data = self.data_time[date]
-        self.delete()
 
         if data:
-            if os.path.exists('image_chart_day.png'):
-                os.remove('image_chart_day.png')
+            if os.path.exists('chart_images/image_chart_day.png'):
+                os.remove('chart_images/image_chart_day.png')
 
             self.widget = QWidget()
             layout = QGridLayout()
@@ -214,9 +214,9 @@ class LookDataWindow(QWidget):
             chart_day.subplots()
             chart_day.pie(list(data.values()), explode=explode, labels=labels, autopct='%1.1f%%', shadow=True)
             chart_day.title('Распределение времени по категориям')
-            chart_day.savefig('image_chart_day.png')
+            chart_day.savefig('chart_images/image_chart_day.png')
             chart_day = QLabel()
-            chart_day.setPixmap(QPixmap('image_chart_day.png'))
+            chart_day.setPixmap(QPixmap('chart_images/image_chart_day.png'))
 
             day_layout = QVBoxLayout()
             name_category = QLabel('Категории')
@@ -250,12 +250,68 @@ class LookDataWindow(QWidget):
     def create_weeks_widgets(self, number_week, month, year):
         self.delete()
 
-        self.widget = QWidget()
-        l = QGridLayout()
-        label = QLabel(f'week = {number_week}, month = {month}, year = {year}')
-        label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-        l.addWidget(label)
-        self.widget.setLayout(l)
+        if type(month) == str:
+            month = title_month.index(month) + 1
+            year = int(year)
+
+        with open(DATA) as file:
+            self.data_time = json.load(file)
+
+        number_week = number_week.split()
+        dates_days_week = []
+
+        if number_week[1] == '-':
+            for day in range(int(number_week[0]), int(number_week[2]) + 1):
+                dates_days_week.append(str(year) + '-' + '0' * (2 - len(str(month))) + str(month)
+                                       + '-' + '0' * (2 - len(str(day))) + str(day))
+        else:
+            first_month = title_month.index(number_week[1]) + 1
+            second_month = title_month.index(number_week[4]) + 1
+            if first_month == 12:
+                first_year = year - 1
+                second_year = year
+            elif second_month == 1:
+                first_year = year
+                second_year = year + 1
+            else:
+                first_year = year
+                second_year = year
+
+            for day in range(int(number_week[0]), check_leap_year(first_month - 1, first_year) + 1):
+                dates_days_week.append(str(first_year) + '-' + '0' * (2 - len(str(first_month))) + str(first_month)
+                                       + '-' + '0' * (2 - len(str(day))) + str(day))
+
+            for day in range(1, int(number_week[3]) + 1):
+                dates_days_week.append(str(second_year) + '-' + '0' * (2 - len(str(second_month))) + str(second_month)
+                                       + '-' + '0' * (2 - len(str(day))) + str(day))
+
+        data = []
+        for date in dates_days_week:
+            data.append(self.data_time.get(date))
+
+        if any(data):
+            if os.path.exists('chart_images/image_chart_week_histogram.png'):
+                os.remove('chart_images/image_chart_week_histogram.png')
+
+            self.widget = QWidget()
+            layout = QGridLayout()
+
+            chart_week_histogram = chart
+            chart_week_histogram.subplots()
+            chart_week_histogram.bar(dates_days_week, [1, 2, 3, 4, 5, 6, 7])
+            chart_week_histogram.xticks(rotation=15)
+            chart_week_histogram.savefig('chart_images/image_chart_week_histogram.png')
+            chart_week_histogram = QLabel()
+            chart_week_histogram.setPixmap(QPixmap('chart_images/image_chart_week_histogram.png'))
+
+            layout.addWidget(chart_week_histogram, 0, 0)
+            self.widget.setLayout(layout)
+            print(data)
+
+        else:
+            self.widget = self.create_clear_widget()
+            self.widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
 
     def create_months_widgets(self, month, year):
@@ -375,9 +431,9 @@ class LookDataWindow(QWidget):
 
         min_date = min(self.data_time.keys())
         if str(year) + '-' + '0' * (2 - len(str(month + 1))) + str(month + 1) == min_date[:-3]:
-            number_weeks = math.ceil(((first_day_month + int(min_date[-2:]) % 7 + 1) + (check_leap_year(month, year) -
-                                                                                        int(min_date[-2:]))) / 7)
-            list_week = list_week[-number_weeks :]
+            number_weeks = math.ceil(((first_day_month + int(min_date[-2:]) % 7 + 1) +
+                                      (check_leap_year(month, year) - int(min_date[-2:]))) / 7)
+            list_week = list_week[-number_weeks:]
 
         [self.comboBox_weeks.addItem(x) for x in list_week]
 
