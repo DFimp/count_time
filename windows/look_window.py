@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QWidget, QApplication, QTableWidget, QGridLayout, QT
     QComboBox, QPushButton, QLabel, QRadioButton, QGroupBox, QVBoxLayout
 from PyQt5.QtCore import QDate
 from PyQt5.Qt import QPixmap
-from additionally import days_in_month, title_month, title_day_in_week, check_leap_year
+from additionally import days_in_month, title_month, title_day_in_week, check_leap_year, full_title_day_in_week
 from function.time_for_human import transformation
 import json
 import matplotlib.pyplot as chart
@@ -327,6 +327,7 @@ class LookDataWindow(QWidget):
 
             layout.addWidget(chart_week_histogram, 0, 0)
             layout.addWidget(pie_chart_week, 0, 1)
+            layout.addWidget(self.get_analytics_data_week(data, sum_data_category, categories), 0, 2)
             self.widget.setLayout(layout)
 
         else:
@@ -350,8 +351,10 @@ class LookDataWindow(QWidget):
                         sum_data_category[ind] += dat.get(category)
             ind += 1
 
+        explode = [0.1 if activity == max(sum_data_category) else 0 for activity in sum_data_category]
+
         pie_chart_week.pie(sum_data_category, labels=[self.data_time['decoding'][category] for category in categories],
-                           autopct='%1.1f%%', shadow=True)
+                           explode=explode, autopct='%1.1f%%', shadow=True)
         pie_chart_week.title('Распределение времени по категориям')
         pie_chart_week.savefig('chart_images/image_pie_chart_week.png')
 
@@ -407,8 +410,41 @@ class LookDataWindow(QWidget):
         chart_week_histogram.title(f'Потрачено времени в {style}')
         chart_week_histogram.savefig('chart_images/image_chart_week_histogram.png')
 
-    def get_analytics_data_week(self):
-        pass
+    def get_analytics_data_week(self, data, sum_data_category, categories):
+        ''' Creating an analytics widget in a week '''
+
+        week_layout = QVBoxLayout()
+
+        name_category = QLabel('Категории')
+        name_category.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        week_layout.addWidget(name_category)
+
+        for category in enumerate(sum_data_category):
+            ind = category[0]
+            ind = categories[ind]
+            week_layout.addWidget(QLabel(f'{self.data_time["decoding"][ind]} - {transformation(category[1])}'))
+            week_layout.addWidget(QLabel(f'Среднее время в день - {transformation(int(category[1] / 7))}'))
+
+        name_analytics = QLabel('Аналитика')
+        name_analytics.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        week_layout.addWidget(name_analytics)
+
+        all_time = QLabel(f'Всего - {transformation(sum(sum_data_category))}')
+        week_layout.addWidget(all_time)
+
+        data = [sum(day.values()) if day else 0 for day in data]
+        best_day_week = max(data)
+        for day in enumerate(data):
+            if day[1] == best_day_week:
+                ind = day[0]
+                best_day_week = full_title_day_in_week[ind]
+                break
+        week_layout.addWidget(QLabel(f'Лучший день - {best_day_week}'))
+
+        group_label_week = QGroupBox()
+        group_label_week.setLayout(week_layout)
+
+        return group_label_week
 
     def create_months_widgets(self, month, year):
         self.delete()
