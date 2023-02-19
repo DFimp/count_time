@@ -313,15 +313,20 @@ class LookDataWindow(QWidget):
         if any(data):
             if os.path.exists('chart_images/image_chart_week_histogram.png'):
                 os.remove('chart_images/image_chart_week_histogram.png')
+                os.remove('chart_images/image_pie_chart_week.png')
 
             self.widget = QWidget()
             layout = QGridLayout()
 
             self.get_histogram_week(data, dates_days_week, categories)
+            sum_data_category = self.get_pie_chart_week(data, categories)
+            pie_chart_week = QLabel()
+            pie_chart_week.setPixmap(QPixmap('chart_images/image_pie_chart_week.png'))
             chart_week_histogram = QLabel()
             chart_week_histogram.setPixmap(QPixmap('chart_images/image_chart_week_histogram.png'))
 
             layout.addWidget(chart_week_histogram, 0, 0)
+            layout.addWidget(pie_chart_week, 0, 1)
             self.widget.setLayout(layout)
 
         else:
@@ -329,6 +334,28 @@ class LookDataWindow(QWidget):
             self.widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
 
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
+
+    def get_pie_chart_week(self, data, categories):
+        ''' Creating a pie chart for week_widget '''
+
+        pie_chart_week = chart
+        pie_chart_week.subplots()
+
+        sum_data_category = []
+        ind = 0
+        for category in categories:
+            sum_data_category.append(0)
+            for dat in data:
+                if dat and dat.get(category):
+                        sum_data_category[ind] += dat.get(category)
+            ind += 1
+
+        pie_chart_week.pie(sum_data_category, labels=[self.data_time['decoding'][category] for category in categories],
+                           autopct='%1.1f%%', shadow=True)
+        pie_chart_week.title('Распределение времени по категориям')
+        pie_chart_week.savefig('chart_images/image_pie_chart_week.png')
+
+        return sum_data_category
 
     def get_histogram_week(self, data, dates_days_week, categories):
         ''' Creating a histogram for week_widget '''
@@ -373,12 +400,15 @@ class LookDataWindow(QWidget):
 
         [chart_week_histogram.bar(dates_days_week, x) for x in time_for_day[::-1]]
 
-        b = [self.data_time['decoding'][category] for category in categories]
-        b.reverse()
-        chart_week_histogram.legend(b)
+        categories = [self.data_time['decoding'][category] for category in categories]
+        categories.reverse()
+        chart_week_histogram.legend(categories)
         chart_week_histogram.xticks(rotation=15)
         chart_week_histogram.title(f'Потрачено времени в {style}')
         chart_week_histogram.savefig('chart_images/image_chart_week_histogram.png')
+
+    def get_analytics_data_week(self):
+        pass
 
     def create_months_widgets(self, month, year):
         self.delete()
