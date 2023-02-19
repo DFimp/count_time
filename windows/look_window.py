@@ -74,10 +74,14 @@ class LookDataWindow(QWidget):
         self.grid_layout.addWidget(self.btn_menu, 0, 1)
 
     def selected_day(self):
+        ''' Creates a widget of the selected day when changing ComboBox_days '''
+
         self.create_days_widgets(self.comboBox_days.currentText(), self.comboBox_months.currentText(),
                                  self.comboBox_years.currentText())
 
     def selected_week(self):
+        ''' Creates a widget of the selected week when changing ComboBox_weeks '''
+
         self.create_weeks_widgets(self.comboBox_weeks.currentText(), self.comboBox_months.currentText(),
                                   self.comboBox_years.currentText())
 
@@ -122,16 +126,20 @@ class LookDataWindow(QWidget):
             self.create_years_widgets(self.comboBox_years.currentText())
 
     def reset(self):
+        ''' Resets the RadioButton value when exiting the look_window window '''
+
         self.check_box_days.setChecked(True)
 
     def delete(self):
+        ''' Deletes the widget that currently exists, if it exists '''
+
         try:
             self.widget.deleteLater()
         except:
             pass
 
     def time_segment(self):
-        ''' Fill in the ComboBox values when changing the selected RudioButton '''
+        ''' Fill in the ComboBox values when changing the selected RadioButton '''
 
         if self.check_box_days.isChecked():
             self.fill_year()
@@ -174,9 +182,13 @@ class LookDataWindow(QWidget):
             self.create_all_widgets()
 
     def create_clear_widget(self):
+        ''' Creates a QLabel only if there is no data for the selected period '''
+
         return QLabel('За выбранный период данные не найдены ¯\_(ツ)_/¯')
 
     def create_days_widgets(self, day, month, year):
+        ''' Creates a widget that is displayed when RadioButton_day is selected '''
+
         self.delete()
 
         if type(day) == str:
@@ -248,6 +260,8 @@ class LookDataWindow(QWidget):
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
 
     def create_weeks_widgets(self, number_week, month, year):
+        ''' Creates a widget that is displayed when RadioButton_week is selected '''
+
         self.delete()
 
         if type(month) == str:
@@ -289,6 +303,13 @@ class LookDataWindow(QWidget):
         for date in dates_days_week:
             data.append(self.data_time.get(date))
 
+        categories = []
+        for dat in data:
+            if dat:
+                for category in dat:
+                    if category not in categories:
+                        categories.append(category)
+
         if any(data):
             if os.path.exists('chart_images/image_chart_week_histogram.png'):
                 os.remove('chart_images/image_chart_week_histogram.png')
@@ -296,23 +317,68 @@ class LookDataWindow(QWidget):
             self.widget = QWidget()
             layout = QGridLayout()
 
-            chart_week_histogram = chart
-            chart_week_histogram.subplots()
-            chart_week_histogram.bar(dates_days_week, [1, 2, 3, 4, 5, 6, 7])
-            chart_week_histogram.xticks(rotation=15)
-            chart_week_histogram.savefig('chart_images/image_chart_week_histogram.png')
+            self.get_histogram_week(data, dates_days_week, categories)
             chart_week_histogram = QLabel()
             chart_week_histogram.setPixmap(QPixmap('chart_images/image_chart_week_histogram.png'))
 
             layout.addWidget(chart_week_histogram, 0, 0)
             self.widget.setLayout(layout)
-            print(data)
 
         else:
             self.widget = self.create_clear_widget()
             self.widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
 
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
+
+    def get_histogram_week(self, data, dates_days_week, categories):
+        ''' Creating a histogram for week_widget '''
+
+        chart_week_histogram = chart
+        chart_week_histogram.subplots()
+
+        time_for_day = []
+        for category in categories:
+            if time_for_day:
+                day = []
+                ind = 0
+                for dat in data:
+                    if dat:
+                        if dat.get(category):
+                            day.append(time_for_day[-1][ind] + dat[category])
+                        else:
+                            day.append(time_for_day[-1][ind] + 0)
+                    else:
+                        day.append(time_for_day[-1][ind] + 0)
+                    ind += 1
+                time_for_day.append(day)
+            else:
+                day = []
+                for dat in data:
+                    if dat:
+                        if dat.get(category):
+                            day.append(dat[category])
+                        else:
+                            day.append(0)
+                    else:
+                        day.append(0)
+                time_for_day.append(day)
+
+        style = 'секундах'
+        if max(time_for_day[-1]) > 3600:
+            time_for_day = [[dat / 3600 for dat in x] for x in time_for_day]
+            style = 'часах'
+        elif max(time_for_day[-1]) > 60:
+            time_for_day = [[dat / 60 for dat in x] for x in time_for_day]
+            style = 'минутах'
+
+        [chart_week_histogram.bar(dates_days_week, x) for x in time_for_day[::-1]]
+
+        b = [self.data_time['decoding'][category] for category in categories]
+        b.reverse()
+        chart_week_histogram.legend(b)
+        chart_week_histogram.xticks(rotation=15)
+        chart_week_histogram.title(f'Потрачено времени в {style}')
+        chart_week_histogram.savefig('chart_images/image_chart_week_histogram.png')
 
     def create_months_widgets(self, month, year):
         self.delete()
