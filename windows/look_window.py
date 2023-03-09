@@ -10,7 +10,7 @@ import matplotlib.pyplot as chart
 import math
 import os
 
-DATA = 'data_time.json'
+DATA = '../data_time.json'
 
 
 class LookDataWindow(QWidget):
@@ -363,6 +363,8 @@ class LookDataWindow(QWidget):
         elif type_ == 'month':
             pie_chart.savefig('chart_images/image_pie_chart_month.png')
 
+        pie_chart.close()
+
         return sum_data_category
 
     def get_histogram(self, data: list, dates: list, categories: list, type_: str) -> None:
@@ -427,7 +429,9 @@ class LookDataWindow(QWidget):
             chart_histogram.xticks(rotation=45)
             chart_histogram.savefig('chart_images/image_chart_month_histogram.png')
 
-    def get_analytics_data_week(self, data, sum_data_category, categories):
+        chart_histogram.close()
+
+    def get_analytics_data_week(self, data: list, sum_data_category: list, categories: list) -> QGroupBox:
         ''' Creating an analytics widget in a week '''
 
         week_layout = QVBoxLayout()
@@ -509,7 +513,7 @@ class LookDataWindow(QWidget):
 
             layout.addWidget(chart_month_histogram, 0, 0)
             layout.addWidget(pie_chart_month, 0, 1)
-            # layout.addWidget(self.get_analytics_data_week(data, sum_data_category, categories), 0, 2)
+            layout.addWidget(self.get_analytics_data_month(data, sum_data_category, categories), 0, 2)
             self.widget.setLayout(layout)
 
         else:
@@ -517,6 +521,35 @@ class LookDataWindow(QWidget):
             self.widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
 
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
+
+    def get_analytics_data_month(self, data, sum_data_category, categories):
+        ''' Creating an analytics widget in a month '''
+
+        month_layout = QVBoxLayout()
+
+        name_category = QLabel('Категории')
+        name_category.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        month_layout.addWidget(name_category)
+
+        for category in enumerate(sum_data_category):
+            ind = category[0]
+            ind = categories[ind]
+            month_layout.addWidget(QLabel(f'{self.data_time["decoding"][ind]} - {transformation(category[1])}'))
+            month_layout.addWidget(QLabel(f'Среднее время в день - {transformation(int(category[1] / 7))}'))
+
+        name_analytics = QLabel('Аналитика')
+        name_analytics.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        month_layout.addWidget(name_analytics)
+
+        all_time = QLabel(f'Всего - {transformation(sum(sum_data_category))}')
+        month_layout.addWidget(all_time)
+
+        data = [sum(day.values()) if day else 0 for day in data]
+
+        group_label_week = QGroupBox()
+        group_label_week.setLayout(month_layout)
+
+        return group_label_week
 
     def create_years_widgets(self, year):
         self.delete()
@@ -690,13 +723,13 @@ class LookDataWindow(QWidget):
         table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         return table
 
-#
-# import sys
-#
-# app = QApplication(sys.argv)
-#
-# window = LookDataWindow()
-#
-# window.show()
-#
-# app.exec_()
+
+import sys
+
+app = QApplication(sys.argv)
+
+window = LookDataWindow()
+
+window.show()
+
+app.exec_()
