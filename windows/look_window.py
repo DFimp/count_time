@@ -11,7 +11,7 @@ import math
 import os
 import numpy as np
 
-DATA = '../data_time.json'
+DATA = 'data_time.json'
 
 
 class LookDataWindow(QWidget):
@@ -813,13 +813,13 @@ class LookDataWindow(QWidget):
 
         table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         return table
-
-import sys
-
-app = QApplication(sys.argv)
-
-window = LookDataWindow()
-
-window.show()
-
-app.exec_()
+#
+# import sys
+#
+# app = QApplication(sys.argv)
+#
+# window = LookDataWindow()
+#
+# window.show()
+#
+# app.exec_()
