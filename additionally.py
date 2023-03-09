@@ -1,5 +1,5 @@
-days_in_month = [31, [28, 29], 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-title_month = ['янв', 'фев', 'март', 'апр', 'май', 'июнь', 'июль', 'авг', 'сен', 'окт', 'ноя', 'дек']
+DAYS_IN_MONTH = [31, [28, 29], 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+TITLE_MONTH = ['янв', 'фев', 'март', 'апр', 'май', 'июнь', 'июль', 'авг', 'сен', 'окт', 'ноя', 'дек']
 FULL_TITLE_MONTH_GENITIVE_CASE = ['января',
                                   'февраля',
                                   'марта',
@@ -12,6 +12,18 @@ FULL_TITLE_MONTH_GENITIVE_CASE = ['января',
                                   'октября',
                                   'ноября',
                                   'декабря']
+FULL_TITLE_MONTH = ['январь',
+                    'февраль',
+                    'март',
+                    'апрель',
+                    'май',
+                    'июнь',
+                    'июль',
+                    'август',
+                    'сентябрь',
+                    'октябрь',
+                    'ноябрь',
+                    'декабрь']
 title_day_in_week = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 full_title_day_in_week = ['Понедельник',
                           'Вторник',
@@ -25,8 +37,8 @@ full_title_day_in_week = ['Понедельник',
 def check_leap_year(month: int, year: int) -> int:
     if month == 1:
         if year % 4 == 0:
-            return days_in_month[month][1]
+            return DAYS_IN_MONTH[month][1]
         else:
-            return days_in_month[month][0]
+            return DAYS_IN_MONTH[month][0]
     else:
-        return days_in_month[month]
+        return DAYS_IN_MONTH[month]

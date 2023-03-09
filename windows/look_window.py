@@ -9,8 +9,9 @@ import json
 import matplotlib.pyplot as chart
 import math
 import os
+import numpy as np
 
-DATA = 'data_time.json'
+DATA = '../data_time.json'
 
 
 class LookDataWindow(QWidget):
@@ -90,7 +91,7 @@ class LookDataWindow(QWidget):
             when changing the value of ComboBox_months '''
 
         if self.check_box_days.isChecked():
-            self.fill_day(title_month.index(self.comboBox_months.currentText()) + 1)
+            self.fill_day(TITLE_MONTH.index(self.comboBox_months.currentText()) + 1)
             self.create_days_widgets(self.comboBox_days.currentText(), self.comboBox_months.currentText(),
                                      self.comboBox_years.currentText())
 
@@ -151,7 +152,7 @@ class LookDataWindow(QWidget):
 
         if self.check_box_weeks.isChecked():
             self.comboBox_days.clear()
-            self.fill_week(title_month[self.month - 1], int(self.year))
+            self.fill_week(TITLE_MONTH[self.month - 1], int(self.year))
             self.fill_month(self.year)
             self.fill_year()
 
@@ -197,7 +198,7 @@ class LookDataWindow(QWidget):
 
             day = int(day)
             year = int(year)
-            month = title_month.index(month) + 1
+            month = TITLE_MONTH.index(month) + 1
 
         with open(DATA) as file:
             self.data_time = json.load(file)
@@ -265,7 +266,7 @@ class LookDataWindow(QWidget):
         self.delete()
 
         if type(month) == str:
-            month = title_month.index(month) + 1
+            month = TITLE_MONTH.index(month) + 1
             year = int(year)
 
         with open(DATA) as file:
@@ -279,8 +280,8 @@ class LookDataWindow(QWidget):
                 dates_days_week.append(str(year) + '-' + '0' * (2 - len(str(month))) + str(month)
                                        + '-' + '0' * (2 - len(str(day))) + str(day))
         else:
-            first_month = title_month.index(number_week[1]) + 1
-            second_month = title_month.index(number_week[4]) + 1
+            first_month = TITLE_MONTH.index(number_week[1]) + 1
+            second_month = TITLE_MONTH.index(number_week[4]) + 1
             if first_month == 12:
                 first_year = year - 1
                 second_year = year
@@ -337,7 +338,7 @@ class LookDataWindow(QWidget):
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
 
     def get_pie_chart(self, data: list, categories: list, type_: str) -> list:
-        ''' Creating a pie chart for week and month widget '''
+        ''' Creating a pie chart for week, month, year widget '''
 
         pie_chart = chart
         pie_chart.subplots()
@@ -363,12 +364,15 @@ class LookDataWindow(QWidget):
         elif type_ == 'month':
             pie_chart.savefig('chart_images/image_pie_chart_month.png')
 
+        elif type_ == 'year':
+            pie_chart.savefig('chart_images/image_pie_chart_year.png')
+
         pie_chart.close()
 
         return sum_data_category
 
     def get_histogram(self, data: list, dates: list, categories: list, type_: str) -> None:
-        ''' Creating a histogram for week and month widget '''
+        ''' Creating a histogram for week, month, year widget '''
 
         chart_histogram = chart
         chart_histogram.subplots()
@@ -413,7 +417,7 @@ class LookDataWindow(QWidget):
             [chart_histogram.bar(dates, x) for x in time_for_day[::-1]]
             chart_histogram.tick_params(axis='x', which='major', labelsize=9)
 
-        elif type_ == 'week':
+        elif type_ == 'week' or type_ == 'year':
             [chart_histogram.bar(dates, x) for x in time_for_day[::-1]]
 
         categories = [self.data_time['decoding'][category] for category in categories]
@@ -428,6 +432,10 @@ class LookDataWindow(QWidget):
         elif type_ == 'month':
             chart_histogram.xticks(rotation=45)
             chart_histogram.savefig('chart_images/image_chart_month_histogram.png')
+
+        elif type_ == 'year':
+            chart_histogram.xticks(rotation=45)
+            chart_histogram.savefig('chart_images/image_chart_year_histogram.png')
 
         chart_histogram.close()
 
@@ -467,13 +475,13 @@ class LookDataWindow(QWidget):
 
         return group_label_week
 
-    def create_months_widgets(self, month, year):
+    def create_months_widgets(self, month: int or str, year: int or str) -> None:
         ''' Creates a widget that is displayed when RadioButton_month is selected '''
 
         self.delete()
 
         if type(month) == str:
-            month = title_month.index(month) + 1
+            month = TITLE_MONTH.index(month) + 1
             year = int(year)
 
         with open(DATA) as file:
@@ -557,16 +565,93 @@ class LookDataWindow(QWidget):
 
         return group_label_week
 
-    def create_years_widgets(self, year):
+    def create_years_widgets(self, year: int or str) -> None:
+        ''' Creates a widget that is displayed when RadioButton_year is selected '''
+
+        if type(year) == str:
+            year = int(year)
+
         self.delete()
 
-        self.widget = QWidget()
-        l = QGridLayout()
-        label = QLabel(f'years = {year}')
-        label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-        l.addWidget(label, 0, 0)
-        self.widget.setLayout(l)
+        with open(DATA) as file:
+            self.data_time = json.load(file)
+
+        data = []
+        categories = []
+
+        for month in np.arange(1, 13, 1, dtype=int):
+            days = check_leap_year(month - 1, year)
+            month = '0' * (2 - len(str(month))) + str(month)
+            data.append({})
+            for day in np.arange(1, days + 1, 1, dtype=int):
+                day = '0' * (2 - len(str(day))) + str(day)
+                date = str(year)+'-'+month+'-'+day
+                if self.data_time.get(date):
+                    for key, val in self.data_time[date].items():
+                        if key in data[-1].keys():
+                            data[-1][key] += val
+                        else:
+                            data[-1][key] = val
+
+                        if key not in categories:
+                            categories.append(key)
+
+        if any(data):
+            if os.path.exists('chart_images/image_chart_year_histogram.png'):
+                os.remove('chart_images/image_chart_year_histogram.png')
+                os.remove('chart_images/image_pie_chart_year.png')
+
+            self.widget = QWidget()
+            layout = QGridLayout()
+
+            self.get_histogram(data, TITLE_MONTH, categories, 'year')
+            sum_data_category = self.get_pie_chart(data, categories, 'year')
+            pie_chart_year = QLabel()
+            pie_chart_year.setPixmap(QPixmap('chart_images/image_pie_chart_year.png'))
+            chart_year_histogram = QLabel()
+            chart_year_histogram.setPixmap(QPixmap('chart_images/image_chart_year_histogram.png'))
+
+            layout.addWidget(chart_year_histogram, 0, 0)
+            layout.addWidget(pie_chart_year, 0, 1)
+            layout.addWidget(self.get_analytics_data_year(data, sum_data_category, categories), 0, 2)
+
+            self.widget.setLayout(layout)
+
+        else:
+            self.widget = self.create_clear_widget()
+            self.widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
+
+    def get_analytics_data_year(self, data: list, sum_data_category: list, categories: list,) -> QGroupBox:
+        ''' Creating an analytics widget in a year '''
+
+        year_layout = QVBoxLayout()
+
+        name_category = QLabel('Категории')
+        name_category.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        year_layout.addWidget(name_category)
+
+        for category in enumerate(sum_data_category):
+            ind = category[0]
+            ind = categories[ind]
+            year_layout.addWidget(QLabel(f'{self.data_time["decoding"][ind]} - {transformation(category[1])}'))
+            year_layout.addWidget(QLabel(f'Среднее время в месяц - {transformation(int(category[1] / 12))}'))
+
+        name_analytics = QLabel('Аналитика')
+        name_analytics.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        year_layout.addWidget(name_analytics)
+        year_layout.addWidget(QLabel(f'Всего - {transformation(sum(sum_data_category))}'))
+        year_layout.addWidget(QLabel(f'Среднее время в месяц - '
+                                      f'{transformation(math.ceil(sum(sum_data_category) / 12))}'))
+        data = [sum(day.values()) if day else 0 for day in data]
+        year_layout.addWidget(QLabel(f'Лучший месяц - {FULL_TITLE_MONTH[data.index(max(data))]}'))
+        year_layout.addWidget(QLabel(f'Потрачено времени - {transformation(max(data))}'))
+
+        group_label_week = QGroupBox()
+        group_label_week.setLayout(year_layout)
+
+        return group_label_week
 
     def create_all_widgets(self):
         self.delete()
@@ -608,7 +693,7 @@ class LookDataWindow(QWidget):
         day_week = self.day_week
         today_month = self.month - 1
         today_year = self.year
-        month = title_month.index(month)
+        month = TITLE_MONTH.index(month)
 
         number_days = check_leap_year(month, year)
         day_week = title_day_in_week.index(day_week)
@@ -645,8 +730,8 @@ class LookDataWindow(QWidget):
 
         while True:
             if first_day_month != 0:
-                list_week.append(f'{check_leap_year(month - 1, year) + 1 - first_day_month} {title_month[month - 1]} - '
-                                 f'{end_day} {title_month[month]}')
+                list_week.append(f'{check_leap_year(month - 1, year) + 1 - first_day_month} {TITLE_MONTH[month - 1]} - '
+                                 f'{end_day} {TITLE_MONTH[month]}')
                 first_day_month = 0
             else:
                 list_week.append(f'{first_day} - {end_day}')
@@ -654,7 +739,7 @@ class LookDataWindow(QWidget):
             end_day += 7
             if end_day > number_days:
                 end_day = 6 - (number_days - first_day)
-                list_week.append(f'{first_day} {title_month[month]} - {end_day} {title_month[month - 11]}')
+                list_week.append(f'{first_day} {TITLE_MONTH[month]} - {end_day} {TITLE_MONTH[month - 11]}')
                 break
 
         min_date = min(self.data_time.keys())
@@ -675,7 +760,7 @@ class LookDataWindow(QWidget):
         months.reverse()
 
         for month in months:
-            self.comboBox_months.addItem(title_month[month - 1])
+            self.comboBox_months.addItem(TITLE_MONTH[month - 1])
 
     def fill_year(self):
         ''' Counting and recording the number of years in ComboBox_years '''
@@ -699,16 +784,16 @@ class LookDataWindow(QWidget):
         month = today[1]
 
         daysKeys = [today[0] + '-' + today[1] + '-' + '0' * (2 - len(str(day + 1))) + str(day + 1) for day in
-                    range(days_in_month[int(month) - 1])]
+                    range(DAYS_IN_MONTH[int(month) - 1])]
 
         table = QTableWidget(self)
         table.setColumnCount(len(category))
-        table.setRowCount(days_in_month[int(month) - 1])
+        table.setRowCount(DAYS_IN_MONTH[int(month) - 1])
 
         table.setHorizontalHeaderLabels(category)
         table.setVerticalHeaderLabels(daysKeys)
 
-        for i in range(days_in_month[int(month) - 1]):
+        for i in range(DAYS_IN_MONTH[int(month) - 1]):
             for j in range(int(max(self.data_time['decoding'])[-1])):
                 table.setItem(i, j, QTableWidgetItem('0'))
 
@@ -729,12 +814,12 @@ class LookDataWindow(QWidget):
         table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         return table
 
-# import sys
-#
-# app = QApplication(sys.argv)
-#
-# window = LookDataWindow()
-#
-# window.show()
-#
-# app.exec_()
+import sys
+
+app = QApplication(sys.argv)
+
+window = LookDataWindow()
+
+window.show()
+
+app.exec_()

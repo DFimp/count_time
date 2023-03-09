@@ -1,5 +1,5 @@
 import json
-from additionally import days_in_month
+from additionally import DAYS_IN_MONTH
 from os.path import isfile
 
 
@@ -20,15 +20,15 @@ def fill_past_date(date, data):
                     month -= 1
                     if month == 2:
                         if year % 4 == 0:
-                            day = days_in_month[month - 1][1]
+                            day = DAYS_IN_MONTH[month - 1][1]
                         else:
-                            day = days_in_month[month - 1][0]
+                            day = DAYS_IN_MONTH[month - 1][0]
                     else:
-                        day = days_in_month[month - 1]
+                        day = DAYS_IN_MONTH[month - 1]
                 else:
                     year -= 1
                     month = 12
-                    day = days_in_month[month - 1]
+                    day = DAYS_IN_MONTH[month - 1]
 
             date = str(year) + '-' + '0' * (2 - len(str(month))) + str(month) + '-' + '0' * (2 - len(str(day))) + str(day)
 
