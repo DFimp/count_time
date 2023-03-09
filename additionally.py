@@ -10,7 +10,7 @@ full_title_day_in_week = ['Понедельник',
                           'Воскресенье']
 
 
-def check_leap_year(month, year):
+def check_leap_year(month: int, year: int) -> int:
     if month == 1:
         if year % 4 == 0:
             return days_in_month[month][1]
