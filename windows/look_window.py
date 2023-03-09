@@ -10,7 +10,7 @@ import matplotlib.pyplot as chart
 import math
 import os
 
-DATA = '../data_time.json'
+DATA = 'data_time.json'
 
 
 class LookDataWindow(QWidget):
@@ -259,7 +259,7 @@ class LookDataWindow(QWidget):
 
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
 
-    def create_weeks_widgets(self, number_week, month, year):
+    def create_weeks_widgets(self, number_week: str, month: int, year: int) -> None:
         ''' Creates a widget that is displayed when RadioButton_week is selected '''
 
         self.delete()
@@ -318,8 +318,8 @@ class LookDataWindow(QWidget):
             self.widget = QWidget()
             layout = QGridLayout()
 
-            self.get_histogram_week(data, dates_days_week, categories)
-            sum_data_category = self.get_pie_chart_week(data, categories)
+            self.get_histogram(data, dates_days_week, categories, 'week')
+            sum_data_category = self.get_pie_chart(data, categories, 'week')
             pie_chart_week = QLabel()
             pie_chart_week.setPixmap(QPixmap('chart_images/image_pie_chart_week.png'))
             chart_week_histogram = QLabel()
@@ -336,11 +336,11 @@ class LookDataWindow(QWidget):
 
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
 
-    def get_pie_chart_week(self, data, categories):
-        ''' Creating a pie chart for week_widget '''
+    def get_pie_chart(self, data: list, categories: list, type_: str) -> list:
+        ''' Creating a pie chart for week and month widget '''
 
-        pie_chart_week = chart
-        pie_chart_week.subplots()
+        pie_chart = chart
+        pie_chart.subplots()
 
         sum_data_category = []
         ind = 0
@@ -348,23 +348,28 @@ class LookDataWindow(QWidget):
             sum_data_category.append(0)
             for dat in data:
                 if dat and dat.get(category):
-                        sum_data_category[ind] += dat.get(category)
+                    sum_data_category[ind] += dat.get(category)
             ind += 1
 
         explode = [0.1 if activity == max(sum_data_category) else 0 for activity in sum_data_category]
 
-        pie_chart_week.pie(sum_data_category, labels=[self.data_time['decoding'][category] for category in categories],
+        pie_chart.pie(sum_data_category, labels=[self.data_time['decoding'][category] for category in categories],
                            explode=explode, autopct='%1.1f%%', shadow=True)
-        pie_chart_week.title('Распределение времени по категориям')
-        pie_chart_week.savefig('chart_images/image_pie_chart_week.png')
+        pie_chart.title('Распределение времени по категориям')
+
+        if type_ == 'week':
+            pie_chart.savefig('chart_images/image_pie_chart_week.png')
+
+        elif type_ == 'month':
+            pie_chart.savefig('chart_images/image_pie_chart_month.png')
 
         return sum_data_category
 
-    def get_histogram_week(self, data, dates_days_week, categories):
-        ''' Creating a histogram for week_widget '''
+    def get_histogram(self, data: list, dates: list, categories: list, type_: str) -> None:
+        ''' Creating a histogram for week and month widget '''
 
-        chart_week_histogram = chart
-        chart_week_histogram.subplots()
+        chart_histogram = chart
+        chart_histogram.subplots()
 
         time_for_day = []
         for category in categories:
@@ -401,14 +406,26 @@ class LookDataWindow(QWidget):
             time_for_day = [[dat / 60 for dat in x] for x in time_for_day]
             style = 'минутах'
 
-        [chart_week_histogram.bar(dates_days_week, x) for x in time_for_day[::-1]]
+        if type_ == 'month':
+            dates = [date[-5:] for date in dates]
+            [chart_histogram.bar(dates, x) for x in time_for_day[::-1]]
+            chart_histogram.tick_params(axis='x', which='major', labelsize=9)
+
+        elif type_ == 'week':
+            [chart_histogram.bar(dates, x) for x in time_for_day[::-1]]
 
         categories = [self.data_time['decoding'][category] for category in categories]
         categories.reverse()
-        chart_week_histogram.legend(categories)
-        chart_week_histogram.xticks(rotation=15)
-        chart_week_histogram.title(f'Потрачено времени в {style}')
-        chart_week_histogram.savefig('chart_images/image_chart_week_histogram.png')
+        chart_histogram.legend(categories)
+        chart_histogram.title(f'Потрачено времени в {style}')
+
+        if type_ == 'week':
+            chart_histogram.xticks(rotation=15)
+            chart_histogram.savefig('chart_images/image_chart_week_histogram.png')
+
+        elif type_ == 'month':
+            chart_histogram.xticks(rotation=45)
+            chart_histogram.savefig('chart_images/image_chart_month_histogram.png')
 
     def get_analytics_data_week(self, data, sum_data_category, categories):
         ''' Creating an analytics widget in a week '''
@@ -447,18 +464,58 @@ class LookDataWindow(QWidget):
         return group_label_week
 
     def create_months_widgets(self, month, year):
+        ''' Creates a widget that is displayed when RadioButton_month is selected '''
+
         self.delete()
 
-        self.widget = QWidget()
-        l = QGridLayout()
-        label = QLabel(f'month = {month}, year = {year}')
-        label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        if type(month) == str:
+            month = title_month.index(month) + 1
+            year = int(year)
 
-        table = self.create_table()
-        l.addWidget(table, 0, 1)
+        with open(DATA) as file:
+            self.data_time = json.load(file)
 
-        l.addWidget(label)
-        self.widget.setLayout(l)
+        days_of_month = []
+
+        for day in range(1, check_leap_year(month-1, year) + 1):
+            days_of_month.append(str(year) + '-' + '0' * (2 - len(str(month))) + str(month)
+                                 + '-' + '0' * (2 - len(str(day))) + str(day))
+
+        data = []
+        for date in days_of_month:
+            data.append(self.data_time.get(date))
+
+        categories = []
+        for dat in data:
+            if dat:
+                for category in dat:
+                    if category not in categories:
+                        categories.append(category)
+
+        if any(data):
+            if os.path.exists('chart_images/image_chart_month_histogram.png'):
+                os.remove('chart_images/image_chart_month_histogram.png')
+                os.remove('chart_images/image_pie_chart_month.png')
+
+            self.widget = QWidget()
+            layout = QGridLayout()
+
+            self.get_histogram(data, days_of_month, categories, 'month')
+            sum_data_category = self.get_pie_chart(data, categories, 'month')
+            pie_chart_month = QLabel()
+            pie_chart_month.setPixmap(QPixmap('chart_images/image_pie_chart_month.png'))
+            chart_month_histogram = QLabel()
+            chart_month_histogram.setPixmap(QPixmap('chart_images/image_chart_month_histogram.png'))
+
+            layout.addWidget(chart_month_histogram, 0, 0)
+            layout.addWidget(pie_chart_month, 0, 1)
+            # layout.addWidget(self.get_analytics_data_week(data, sum_data_category, categories), 0, 2)
+            self.widget.setLayout(layout)
+
+        else:
+            self.widget = self.create_clear_widget()
+            self.widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
 
     def create_years_widgets(self, year):
@@ -598,7 +655,7 @@ class LookDataWindow(QWidget):
         with open(DATA) as file:
             self.data_time = json.load(file)
 
-        today = f'2023-01-01'.split('-')
+        today = f'2023-03-01'.split('-')
         category = list(self.data_time['decoding'].values())
         month = today[1]
 
@@ -633,12 +690,13 @@ class LookDataWindow(QWidget):
         table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         return table
 
-
-import sys
-app = QApplication(sys.argv)
-
-window = LookDataWindow()
-
-window.show()
-
-app.exec_()
+#
+# import sys
+#
+# app = QApplication(sys.argv)
+#
+# window = LookDataWindow()
+#
+# window.show()
+#
+# app.exec_()
