@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import QWidget, QApplication, QTableWidget, QGridLayout, QT
 from PyQt5.QtCore import QDate
 from PyQt5.Qt import QPixmap
 from additionally import *
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 from function.time_for_human import transformation
 import json
 import matplotlib.pyplot as chart
@@ -182,7 +184,7 @@ class LookDataWindow(QWidget):
 
             self.create_all_widgets()
 
-    def create_clear_widget(self):
+    def create_clean_widget(self):
         ''' Creates a QLabel only if there is no data for the selected period '''
 
         return QLabel('За выбранный период данные не найдены ¯\_(ツ)_/¯')
@@ -255,7 +257,7 @@ class LookDataWindow(QWidget):
             self.widget.setLayout(layout)
 
         else:
-            self.widget = self.create_clear_widget()
+            self.widget = self.create_clean_widget()
             self.widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
 
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
@@ -332,7 +334,7 @@ class LookDataWindow(QWidget):
             self.widget.setLayout(layout)
 
         else:
-            self.widget = self.create_clear_widget()
+            self.widget = self.create_clean_widget()
             self.widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
 
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
@@ -342,9 +344,9 @@ class LookDataWindow(QWidget):
 
         pie_chart = chart
         pie_chart.subplots()
-
         sum_data_category = []
         ind = 0
+
         for category in categories:
             sum_data_category.append(0)
             for dat in data:
@@ -353,20 +355,10 @@ class LookDataWindow(QWidget):
             ind += 1
 
         explode = [0.1 if activity == max(sum_data_category) else 0 for activity in sum_data_category]
-
         pie_chart.pie(sum_data_category, labels=[self.data_time['decoding'][category] for category in categories],
                            explode=explode, autopct='%1.1f%%', shadow=True)
         pie_chart.title('Распределение времени по категориям')
-
-        if type_ == 'week':
-            pie_chart.savefig('chart_images/image_pie_chart_week.png')
-
-        elif type_ == 'month':
-            pie_chart.savefig('chart_images/image_pie_chart_month.png')
-
-        elif type_ == 'year':
-            pie_chart.savefig('chart_images/image_pie_chart_year.png')
-
+        pie_chart.savefig(f'chart_images/image_pie_chart_{type_}.png')
         pie_chart.close()
 
         return sum_data_category
@@ -427,16 +419,14 @@ class LookDataWindow(QWidget):
 
         if type_ == 'week':
             chart_histogram.xticks(rotation=15)
-            chart_histogram.savefig('chart_images/image_chart_week_histogram.png')
 
         elif type_ == 'month':
             chart_histogram.xticks(rotation=45)
-            chart_histogram.savefig('chart_images/image_chart_month_histogram.png')
 
         elif type_ == 'year':
             chart_histogram.xticks(rotation=45)
-            chart_histogram.savefig('chart_images/image_chart_year_histogram.png')
 
+        chart_histogram.savefig(f'chart_images/image_chart_{type_}_histogram.png')
         chart_histogram.close()
 
     def get_analytics_data_week(self, data: list, sum_data_category: list, categories: list) -> QGroupBox:
@@ -470,10 +460,10 @@ class LookDataWindow(QWidget):
                 break
         week_layout.addWidget(QLabel(f'Лучший день - {best_day_week}'))
 
-        group_label_week = QGroupBox()
-        group_label_week.setLayout(week_layout)
+        group_label_month = QGroupBox()
+        group_label_month.setLayout(week_layout)
 
-        return group_label_week
+        return group_label_month
 
     def create_months_widgets(self, month: int or str, year: int or str) -> None:
         ''' Creates a widget that is displayed when RadioButton_month is selected '''
@@ -528,7 +518,7 @@ class LookDataWindow(QWidget):
             self.widget.setLayout(layout)
 
         else:
-            self.widget = self.create_clear_widget()
+            self.widget = self.create_clean_widget()
             self.widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
 
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
@@ -618,7 +608,7 @@ class LookDataWindow(QWidget):
             self.widget.setLayout(layout)
 
         else:
-            self.widget = self.create_clear_widget()
+            self.widget = self.create_clean_widget()
             self.widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
 
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
@@ -648,21 +638,98 @@ class LookDataWindow(QWidget):
         year_layout.addWidget(QLabel(f'Лучший месяц - {FULL_TITLE_MONTH[data.index(max(data))]}'))
         year_layout.addWidget(QLabel(f'Потрачено времени - {transformation(max(data))}'))
 
-        group_label_week = QGroupBox()
-        group_label_week.setLayout(year_layout)
+        group_label_year = QGroupBox()
+        group_label_year.setLayout(year_layout)
 
-        return group_label_week
+        return group_label_year
 
     def create_all_widgets(self):
+
         self.delete()
 
-        self.widget = QWidget()
-        l = QGridLayout()
-        label = QLabel('all time')
-        label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-        l.addWidget(label)
-        self.widget.setLayout(l)
+        with open(DATA) as file:
+            self.data_time = json.load(file)
+
+        data = self.data_time.copy()
+        del data['decoding']
+        sum_data = {}
+        data_growth = []
+        dates = []
+        best_day = [None, 0]
+        for key, value in data.items():
+            if best_day[1] < sum(value.values()):
+                best_day = [key, sum(value.values())]
+
+            dates.append(key)
+            if data_growth:
+                data_growth.append(sum(value.values()) + data_growth[-1])
+            else:
+                data_growth.append(sum(value.values()))
+
+            for category, val in value.items():
+                if category not in sum_data.keys():
+                    sum_data[category] = val
+                else:
+                    sum_data[category] += val
+
+        if any(data):
+            self.widget = QWidget()
+            layout = QGridLayout()
+
+            layout.addWidget(self.get_pie_chart_all_time(sum_data), 0, 0)
+            layout.addWidget(self.get_plot_chart_all_time(dates, data_growth), 0, 1)
+            layout.addWidget(self.get_analytics_data_all_time(sum_data, best_day), 0, 2)
+
+            self.widget.setLayout(layout)
+
+        else:
+            self.widget = self.create_clean_widget()
+            self.widget.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
+
+    def get_pie_chart_all_time(self, data: dict) -> FigureCanvas:
+        fig = Figure()
+        ax = fig.add_subplot(111)
+        canvas = FigureCanvas(fig)
+        explode = [0.1 if activity == max(data.values()) else 0 for activity in data.values()]
+        ax.pie(data.values(), labels=[self.data_time['decoding'][category] for category in data.keys()],
+                      explode=explode, autopct='%1.1f%%', shadow=True)
+        ax.set_title('Распределение времени по категориям')
+
+        return canvas
+
+    def get_plot_chart_all_time(self, dates: list, data_growth: list) -> FigureCanvas:
+        fig = Figure()
+        ax = fig.add_subplot(111)
+        canvas = FigureCanvas(fig)
+        ax.plot(dates, data_growth)
+        canvas.draw()
+
+        return canvas
+
+    def get_analytics_data_all_time(self, data: dict, best_day: list) -> QGroupBox:
+
+        all_time_layout = QVBoxLayout()
+
+        name_category = QLabel('Категории')
+        name_category.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        all_time_layout.addWidget(name_category)
+
+        for category, time in data.items():
+            all_time_layout.addWidget(QLabel(f'{self.data_time["decoding"][category]} - {transformation(time)}'))
+
+        name_analytics = QLabel('Аналитика')
+        name_analytics.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        all_time_layout.addWidget(name_analytics)
+        all_time_layout.addWidget(QLabel(f'Всего - {transformation(sum(data.values()))}'))
+        all_time_layout.addWidget(QLabel(f'Лучший день - {best_day[0]}'))
+        all_time_layout.addWidget(QLabel(f'Время в этот день - {transformation(best_day[1])}'))
+
+        group_label_all_time = QGroupBox()
+        group_label_all_time.setLayout(all_time_layout)
+
+        return group_label_all_time
 
     def fill_day(self, month):
         ''' Counting and recording the number of days in ComboBox_days '''
@@ -813,7 +880,7 @@ class LookDataWindow(QWidget):
 
         table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         return table
-#
+
 # import sys
 #
 # app = QApplication(sys.argv)
