@@ -2,15 +2,12 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QApplication, QTableWidget, QGridLayout, QTableWidgetItem, QAbstractItemView, \
     QComboBox, QPushButton, QLabel, QRadioButton, QGroupBox, QVBoxLayout
 from PyQt5.QtCore import QDate
-from PyQt5.Qt import QPixmap
 from additionally import *
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from function.time_for_human import transformation
 import json
-import matplotlib.pyplot as chart
 import math
-import os
 import numpy as np
 
 DATA = 'data_time.json'
@@ -28,7 +25,12 @@ class LookDataWindow(QWidget):
         self.year, self.month, self.day = map(int, self.today.split('-'))
 
         self.setWindowTitle('Просмотр')
-        self.setGeometry(300, 300, 800, 300)
+        self.setFixedSize(1550, 700)
+        self.setStyleSheet('''
+                    color: white;
+                    background-color: #2b2b2b;
+                    font-family: "Arial Black";
+                ''')
 
         self.grid_layout = QGridLayout(self)
         self.setLayout(self.grid_layout)
@@ -184,12 +186,12 @@ class LookDataWindow(QWidget):
 
             self.create_all_widgets()
 
-    def create_clean_widget(self):
+    def create_clean_widget(self) -> QLabel:
         ''' Creates a QLabel only if there is no data for the selected period '''
 
-        return QLabel('За выбранный период данные не найдены ¯\_(ツ)_/¯')
+        return QLabel("За выбранный период данные не найдены ¯\_(ツ)_/¯")
 
-    def create_days_widgets(self, day, month, year):
+    def create_days_widgets(self, day: str or int, month: str or int, year: str or int) -> None:
         ''' Creates a widget that is displayed when RadioButton_day is selected '''
 
         self.delete()
@@ -209,9 +211,6 @@ class LookDataWindow(QWidget):
         data = self.data_time[date]
 
         if data:
-            if os.path.exists('chart_images/image_chart_day.png'):
-                os.remove('chart_images/image_chart_day.png')
-
             self.widget = QWidget()
             layout = QGridLayout()
 
@@ -225,13 +224,11 @@ class LookDataWindow(QWidget):
                 else:
                     explode.append(0)
 
-            chart_day = chart
-            chart_day.subplots()
-            chart_day.pie(list(data.values()), explode=explode, labels=labels, autopct='%1.1f%%', shadow=True)
-            chart_day.title('Распределение времени по категориям')
-            chart_day.savefig('chart_images/image_chart_day.png')
-            chart_day = QLabel()
-            chart_day.setPixmap(QPixmap('chart_images/image_chart_day.png'))
+            fig = Figure()
+            ax = fig.add_subplot(111)
+            canvas = FigureCanvas(fig)
+            ax.pie(list(data.values()), explode=explode, labels=labels, autopct='%1.1f%%', shadow=True)
+            ax.set_title('Распределение времени по категориям')
 
             day_layout = QVBoxLayout()
             name_category = QLabel('Категории')
@@ -252,7 +249,7 @@ class LookDataWindow(QWidget):
             group_label_day = QGroupBox()
             group_label_day.setLayout(day_layout)
 
-            layout.addWidget(chart_day, 0, 0)
+            layout.addWidget(canvas, 0, 0)
             layout.addWidget(group_label_day, 0, 1)
             self.widget.setLayout(layout)
 
@@ -314,22 +311,13 @@ class LookDataWindow(QWidget):
                         categories.append(category)
 
         if any(data):
-            if os.path.exists('chart_images/image_chart_week_histogram.png'):
-                os.remove('chart_images/image_chart_week_histogram.png')
-                os.remove('chart_images/image_pie_chart_week.png')
-
             self.widget = QWidget()
             layout = QGridLayout()
 
-            self.get_histogram(data, dates_days_week, categories, 'week')
-            sum_data_category = self.get_pie_chart(data, categories, 'week')
-            pie_chart_week = QLabel()
-            pie_chart_week.setPixmap(QPixmap('chart_images/image_pie_chart_week.png'))
-            chart_week_histogram = QLabel()
-            chart_week_histogram.setPixmap(QPixmap('chart_images/image_chart_week_histogram.png'))
+            sum_data_category, canvas = self.get_pie_chart(data, categories)
 
-            layout.addWidget(chart_week_histogram, 0, 0)
-            layout.addWidget(pie_chart_week, 0, 1)
+            layout.addWidget(self.get_histogram(data, dates_days_week, categories, 'week'), 0, 0)
+            layout.addWidget(canvas, 0, 1)
             layout.addWidget(self.get_analytics_data_week(data, sum_data_category, categories), 0, 2)
             self.widget.setLayout(layout)
 
@@ -339,11 +327,12 @@ class LookDataWindow(QWidget):
 
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
 
-    def get_pie_chart(self, data: list, categories: list, type_: str) -> list:
+    def get_pie_chart(self, data: list, categories: list) -> list and FigureCanvas:
         ''' Creating a pie chart for week, month, year widget '''
 
-        pie_chart = chart
-        pie_chart.subplots()
+        fig = Figure()
+        ax = fig.add_subplot(111)
+        canvas = FigureCanvas(fig)
         sum_data_category = []
         ind = 0
 
@@ -355,19 +344,18 @@ class LookDataWindow(QWidget):
             ind += 1
 
         explode = [0.1 if activity == max(sum_data_category) else 0 for activity in sum_data_category]
-        pie_chart.pie(sum_data_category, labels=[self.data_time['decoding'][category] for category in categories],
+        ax.pie(sum_data_category, labels=[self.data_time['decoding'][category] for category in categories],
                            explode=explode, autopct='%1.1f%%', shadow=True)
-        pie_chart.title('Распределение времени по категориям')
-        pie_chart.savefig(f'chart_images/image_pie_chart_{type_}.png')
-        pie_chart.close()
+        ax.set_title('Распределение времени по категориям')
 
-        return sum_data_category
+        return sum_data_category, canvas
 
-    def get_histogram(self, data: list, dates: list, categories: list, type_: str) -> None:
+    def get_histogram(self, data: list, dates: list, categories: list, type_: str) -> FigureCanvas:
         ''' Creating a histogram for week, month, year widget '''
 
-        chart_histogram = chart
-        chart_histogram.subplots()
+        fig1 = Figure()
+        ax_histogram = fig1.add_subplot(111)
+        canvas_histogram = FigureCanvas(fig1)
 
         time_for_day = []
         for category in categories:
@@ -406,28 +394,28 @@ class LookDataWindow(QWidget):
 
         if type_ == 'month':
             dates = [date[-5:] for date in dates]
-            [chart_histogram.bar(dates, x) for x in time_for_day[::-1]]
-            chart_histogram.tick_params(axis='x', which='major', labelsize=9)
+            [ax_histogram.bar(dates, x) for x in time_for_day[::-1]]
+            ax_histogram.tick_params(axis='x', which='major', labelsize=9)
 
         elif type_ == 'week' or type_ == 'year':
-            [chart_histogram.bar(dates, x) for x in time_for_day[::-1]]
+            [ax_histogram.bar(dates, x) for x in time_for_day[::-1]]
 
         categories = [self.data_time['decoding'][category] for category in categories]
         categories.reverse()
-        chart_histogram.legend(categories)
-        chart_histogram.title(f'Потрачено времени в {style}')
+        ax_histogram.legend(categories)
+        ax_histogram.set_title(f'Потрачено времени в {style}')
 
         if type_ == 'week':
-            chart_histogram.xticks(rotation=15)
+            ax_histogram.tick_params('x', labelrotation=15)
 
         elif type_ == 'month':
-            chart_histogram.xticks(rotation=45)
+            ax_histogram.set_xticks(np.arange(0, len(dates), (len(dates) // 7)))
+            ax_histogram.tick_params('x', labelrotation=15)
 
         elif type_ == 'year':
-            chart_histogram.xticks(rotation=45)
+            ax_histogram.tick_params('x', labelrotation=45)
 
-        chart_histogram.savefig(f'chart_images/image_chart_{type_}_histogram.png')
-        chart_histogram.close()
+        return canvas_histogram
 
     def get_analytics_data_week(self, data: list, sum_data_category: list, categories: list) -> QGroupBox:
         ''' Creating an analytics widget in a week '''
@@ -497,22 +485,13 @@ class LookDataWindow(QWidget):
                         categories.append(category)
 
         if any(data):
-            if os.path.exists('chart_images/image_chart_month_histogram.png'):
-                os.remove('chart_images/image_chart_month_histogram.png')
-                os.remove('chart_images/image_pie_chart_month.png')
-
             self.widget = QWidget()
             layout = QGridLayout()
 
-            self.get_histogram(data, days_of_month, categories, 'month')
-            sum_data_category = self.get_pie_chart(data, categories, 'month')
-            pie_chart_month = QLabel()
-            pie_chart_month.setPixmap(QPixmap('chart_images/image_pie_chart_month.png'))
-            chart_month_histogram = QLabel()
-            chart_month_histogram.setPixmap(QPixmap('chart_images/image_chart_month_histogram.png'))
+            sum_data_category, canvas = self.get_pie_chart(data, categories)
 
-            layout.addWidget(chart_month_histogram, 0, 0)
-            layout.addWidget(pie_chart_month, 0, 1)
+            layout.addWidget(self.get_histogram(data, days_of_month, categories, 'month'), 0, 0)
+            layout.addWidget(canvas, 0, 1)
             layout.addWidget(self.get_analytics_data_month(data, sum_data_category, categories,
                                                            days_of_month, number_day), 0, 2)
             self.widget.setLayout(layout)
@@ -587,22 +566,13 @@ class LookDataWindow(QWidget):
                             categories.append(key)
 
         if any(data):
-            if os.path.exists('chart_images/image_chart_year_histogram.png'):
-                os.remove('chart_images/image_chart_year_histogram.png')
-                os.remove('chart_images/image_pie_chart_year.png')
-
             self.widget = QWidget()
             layout = QGridLayout()
 
-            self.get_histogram(data, TITLE_MONTH, categories, 'year')
-            sum_data_category = self.get_pie_chart(data, categories, 'year')
-            pie_chart_year = QLabel()
-            pie_chart_year.setPixmap(QPixmap('chart_images/image_pie_chart_year.png'))
-            chart_year_histogram = QLabel()
-            chart_year_histogram.setPixmap(QPixmap('chart_images/image_chart_year_histogram.png'))
+            sum_data_category, canvas = self.get_pie_chart(data, categories)
 
-            layout.addWidget(chart_year_histogram, 0, 0)
-            layout.addWidget(pie_chart_year, 0, 1)
+            layout.addWidget(self.get_histogram(data, TITLE_MONTH, categories, 'year'), 0, 0)
+            layout.addWidget(canvas, 0, 1)
             layout.addWidget(self.get_analytics_data_year(data, sum_data_category, categories), 0, 2)
 
             self.widget.setLayout(layout)
@@ -643,7 +613,8 @@ class LookDataWindow(QWidget):
 
         return group_label_year
 
-    def create_all_widgets(self):
+    def create_all_widgets(self) -> None:
+        ''' Creates a widget that is displayed when RadioButton_all_time is selected '''
 
         self.delete()
 
@@ -676,8 +647,8 @@ class LookDataWindow(QWidget):
             self.widget = QWidget()
             layout = QGridLayout()
 
-            layout.addWidget(self.get_pie_chart_all_time(sum_data), 0, 0)
-            layout.addWidget(self.get_plot_chart_all_time(dates, data_growth), 0, 1)
+            layout.addWidget(self.get_plot_chart_all_time(dates, data_growth), 0, 0)
+            layout.addWidget(self.get_pie_chart_all_time(sum_data), 0, 1)
             layout.addWidget(self.get_analytics_data_all_time(sum_data, best_day), 0, 2)
 
             self.widget.setLayout(layout)
@@ -689,6 +660,8 @@ class LookDataWindow(QWidget):
         self.grid_layout.addWidget(self.widget, 1, 0, 1, 2)
 
     def get_pie_chart_all_time(self, data: dict) -> FigureCanvas:
+        """ Creating a pie chart for all time widget """
+
         fig = Figure()
         ax = fig.add_subplot(111)
         canvas = FigureCanvas(fig)
@@ -700,15 +673,28 @@ class LookDataWindow(QWidget):
         return canvas
 
     def get_plot_chart_all_time(self, dates: list, data_growth: list) -> FigureCanvas:
+        """ Creating a plot chart for all time widget """
+
         fig = Figure()
         ax = fig.add_subplot(111)
         canvas = FigureCanvas(fig)
+        style = 'секундах'
+        if data_growth[-1] > 3600:
+            data_growth = [dat // 3600 for dat in data_growth]
+            style = 'часах'
+        elif data_growth[-1] > 60:
+            data_growth = [dat // 60 for dat in data_growth]
+            style = 'минутах'
         ax.plot(dates, data_growth)
+        ax.set_xticks(np.arange(0, len(data_growth), (len(data_growth) // 7)))
+        ax.tick_params('x', labelrotation=20)
+        ax.set_title(f'Прогресс времени в {style}')
         canvas.draw()
 
         return canvas
 
     def get_analytics_data_all_time(self, data: dict, best_day: list) -> QGroupBox:
+        ''' Creating an analytics widget in the all time '''
 
         all_time_layout = QVBoxLayout()
 
@@ -842,44 +828,44 @@ class LookDataWindow(QWidget):
             year -= 1
             self.comboBox_years.addItem(str(year))
 
-    def create_table(self):
-        with open(DATA) as file:
-            self.data_time = json.load(file)
-
-        today = f'2023-03-01'.split('-')
-        category = list(self.data_time['decoding'].values())
-        month = today[1]
-
-        daysKeys = [today[0] + '-' + today[1] + '-' + '0' * (2 - len(str(day + 1))) + str(day + 1) for day in
-                    range(DAYS_IN_MONTH[int(month) - 1])]
-
-        table = QTableWidget(self)
-        table.setColumnCount(len(category))
-        table.setRowCount(DAYS_IN_MONTH[int(month) - 1])
-
-        table.setHorizontalHeaderLabels(category)
-        table.setVerticalHeaderLabels(daysKeys)
-
-        for i in range(DAYS_IN_MONTH[int(month) - 1]):
-            for j in range(int(max(self.data_time['decoding'])[-1])):
-                table.setItem(i, j, QTableWidgetItem('0'))
-
-            if self.data_time.get(daysKeys[i]):
-                data = self.data_time[daysKeys[i]]
-                for key, val in data.items():
-                    hours = str(val // 3600)
-                    minutes = str((val % 3600) // 60)
-                    seconds = str(val % 60)
-
-                    time = '0' * (2 - len(hours)) + hours + ':' + '0' * (2 - len(minutes)) + minutes + ':' + '0' * \
-                           (2 - len(seconds)) + seconds
-                    col = int(key[-1]) - 1
-                    table.setItem(i, col, QTableWidgetItem(time))
-            else:
-                pass
-
-        table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        return table
+    # def create_table(self):
+    #     with open(DATA) as file:
+    #         self.data_time = json.load(file)
+    #
+    #     today = f'2023-03-01'.split('-')
+    #     category = list(self.data_time['decoding'].values())
+    #     month = today[1]
+    #
+    #     daysKeys = [today[0] + '-' + today[1] + '-' + '0' * (2 - len(str(day + 1))) + str(day + 1) for day in
+    #                 range(DAYS_IN_MONTH[int(month) - 1])]
+    #
+    #     table = QTableWidget(self)
+    #     table.setColumnCount(len(category))
+    #     table.setRowCount(DAYS_IN_MONTH[int(month) - 1])
+    #
+    #     table.setHorizontalHeaderLabels(category)
+    #     table.setVerticalHeaderLabels(daysKeys)
+    #
+    #     for i in range(DAYS_IN_MONTH[int(month) - 1]):
+    #         for j in range(int(max(self.data_time['decoding'])[-1])):
+    #             table.setItem(i, j, QTableWidgetItem('0'))
+    #
+    #         if self.data_time.get(daysKeys[i]):
+    #             data = self.data_time[daysKeys[i]]
+    #             for key, val in data.items():
+    #                 hours = str(val // 3600)
+    #                 minutes = str((val % 3600) // 60)
+    #                 seconds = str(val % 60)
+    #
+    #                 time = '0' * (2 - len(hours)) + hours + ':' + '0' * (2 - len(minutes)) + minutes + ':' + '0' * \
+    #                        (2 - len(seconds)) + seconds
+    #                 col = int(key[-1]) - 1
+    #                 table.setItem(i, col, QTableWidgetItem(time))
+    #         else:
+    #             pass
+    #
+    #     table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+    #     return table
 
 # import sys
 #
